@@ -18,13 +18,13 @@ static struct
 } messages;
 
 static button_t controller_buttons[CONTROLLER_BUTTONS_NUMBER] = {
-    {GPIOB, 3, MSG(STR_LEFT, RELEASED), "LEFT RELEASED\r\n", 0},
-    {GPIOB, 4, MSG(STR_RIGHT, RELEASED), "RIGHT RELEASED\r\n", 0},
+    {GPIOB, 3, "LEFT PRESSED\r\n", "LEFT RELEASED\r\n", 0},
+    {GPIOB, 4, "RIGHT PRESSED\r\n", "RIGHT RELEASED\r\n", 0},
     {GPIOB, 5, "UP PRESSED\r\n", "UP RELEASED\r\n", 0},
     {GPIOB, 6, "DOWN PRESSED\r\n", "DOWN RELEASED\r\n", 0},
     {GPIOB, 10, "FIRE PRESSED\r\n", "FIRE RELEASED\r\n", 0},
     {GPIOC, 13, "USER PRESSED\r\n", "USER RELEASED\r\n", 0},
-    {GPIOA, 0, "MODE PRESET\r\n", "MODE RELEASED\r\n", 1}};
+    {GPIOA, 0, "MODE PRESSED\r\n", "MODE RELEASED\r\n", 1}};
 
 // --------------------- Queue ---------------------
 
@@ -67,7 +67,7 @@ static void queue_push(char *ptr)
     messages.used++;
 }
 
-// --------------------- Configures ---------------------
+// -------------------- Configures --------------------
 
 static void configure_button(button_t *button)
 {
@@ -267,7 +267,7 @@ void DMA1_Stream5_IRQHandler()
 // External interrupt:
 // A set bit in the EXTI->PR register means that there is an event which can trigger an interrupt
 
-// Button 6 (USER) Register 0
+// Button 6 (MODE) Register 0
 void EXTI0_IRQHandler(void)
 {
     uint32_t interrupt_state = EXTI->PR;
@@ -296,7 +296,7 @@ void EXTI9_5_IRQHandler(void)
     interrupt_handler(interrupt_state, EXTI_PR_PR6, &controller_buttons[3]);
 }
 
-// Buttons 4, 5 (FIRE, MODE) Register 10, 13
+// Buttons 4, 5 (FIRE, USER) Register 10, 13
 void EXTI15_10_IRQHandler(void)
 {
     uint32_t interrupt_state = EXTI->PR;
