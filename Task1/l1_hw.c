@@ -1,4 +1,4 @@
-#include "hw1/header.h"
+#include "header.h"
 
 // Messages have 2* button numbers size, 7 released 7 pressed
 static const char *MESSAGES[2 * BUTTON_NUMS] = {
@@ -76,15 +76,7 @@ static uint32_t get_button_state_from_controller(uint32_t button_num)
 // parser for received buffer
 static uint32_t parse_query(char *recv_buffer, uint32_t buffer_used)
 {
-    if (buffer_used < 1 && recv_buffer[0] != 'L')
-    {
-        return 1;
-    }
-    else if (buffer_used < 1)
-    {
-        return 0;
-    }
-    else if (buffer_used < 2 && recv_buffer[1] != 'R' && recv_buffer[1] != 'G' && recv_buffer[1] != 'B' && recv_buffer[1] != 'g')
+    if (buffer_used < 2 && recv_buffer[0] != 'L')
     {
         return 1;
     }
@@ -92,11 +84,19 @@ static uint32_t parse_query(char *recv_buffer, uint32_t buffer_used)
     {
         return 0;
     }
-    else if (buffer_used < 3 && recv_buffer[2] != '0' && recv_buffer[2] != '1' && recv_buffer[2] != 'T')
+    else if (buffer_used < 3 && recv_buffer[1] != 'R' && recv_buffer[1] != 'G' && recv_buffer[1] != 'B' && recv_buffer[1] != 'g')
     {
         return 1;
     }
     else if (buffer_used < 3)
+    {
+        return 0;
+    }
+    else if (buffer_used < 4 && recv_buffer[2] != '0' && recv_buffer[2] != '1' && recv_buffer[2] != 'T')
+    {
+        return 1;
+    }
+    else if (buffer_used < 4)
     {
         char LED_char = recv_buffer[1];
         char opt_char = recv_buffer[2];
@@ -114,7 +114,7 @@ static uint32_t parse_query(char *recv_buffer, uint32_t buffer_used)
             else
             {
                 red_led_state = red_led_state ^ (1 << RED_LED_PIN | 1 << (RED_LED_PIN + 16));
-                RED_LED_GPIO->BSRR = blue_led_state;
+                RED_LED_GPIO->BSRR = red_led_state;
             }
         }
         else if (LED_char == 'G')
@@ -161,7 +161,7 @@ static uint32_t parse_query(char *recv_buffer, uint32_t buffer_used)
             }
             else
             {
-                green2_led_state = green2_led_state ^ (1 << GREEN2_LED_PIN | 1 << (GREEN2_LED_PIN + 16));
+                green2_led_state = green2_led_state ^ ( 1 << (GREEN2_LED_PIN + 16) | 1 << GREEN2_LED_PIN);
                 GREEN2_LED_GPIO->BSRR = green2_led_state;
             }
         }
@@ -190,6 +190,14 @@ static void append_message(uint32_t button_num)
         send_buffer_used++;
         i++;
     }
+
+    /*for (uint32_t i = 0; i < message_len; ++i)
+    {
+        send_buffer[send_buffer_pos] = MESSAGES[message_index][i];
+        __NOP();
+        send_buffer_pos = (send_buffer_pos + 1) % SEND_BUFFER_SIZE;
+        send_buffer_used++;
+    }*/
 }
 
 // go through the 7 buttons and check their states according to controller
