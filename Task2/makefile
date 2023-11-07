@@ -35,4 +35,4 @@ clean :
 	rm -f *.bin *.elf *.hex *.d *.o *.bak *~
 
 program:
-	/opt/arm/stm32/ocd/qfn4 l1.bin
+	/opt/arm/stm32/ocd/qfn4 l2.bin
