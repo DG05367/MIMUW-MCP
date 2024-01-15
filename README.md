@@ -13,3 +13,8 @@ This course focus on microcontroller programming. Standard programming technique
  * [Task1](https://github.com/DG05367/MIMUW-MCP/tree/main/Task1)
 
  * [Task2](https://github.com/DG05367/MIMUW-MCP/tree/main/Task2)
+
+
+ ### Final Project
+
+  * [Project](https://github.com/DG05367/MIMUW-MCP/tree/main/Project)
