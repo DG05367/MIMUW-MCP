@@ -118,19 +118,24 @@ void DMA1_Stream6_IRQHandler(void)
         }
     }
 }
-
 void I2C1_EV_IRQHandler()
 {
+    // Writting to accelerometer register
     if (read_state == WRITING)
     {
+        // If step 0 and Start Bit is 1
+        // Initiate sending, set step to 1
         if (communication_step == 0 && (I2C1->SR1 & I2C_SR1_SB))
         {
             communication_step = 1;
             I2C1->DR = LIS35DE_ADDR << 1;
         }
+        // If step 1 and Address sent
+        // Set step to 2, reset addr, insert value to be written to the acc
         else if (communication_step == 1 && (I2C1->SR1 & I2C_SR1_ADDR))
         {
             communication_step = 2;
+
             I2C1->SR2;
 
             I2C1->DR = target_register;
@@ -143,26 +148,35 @@ void I2C1_EV_IRQHandler()
             I2C1->CR1 |= I2C_CR1_STOP;
         }
     }
+    // Reading from accelerometer register
     else if (read_state == READING)
     {
+        // If step 2 and Byte Transfer Finished
+        // Set step to 3, send start bit
         if (communication_step == 2 && (I2C1->SR1 & I2C_SR1_BTF))
         {
             I2C1->CR1 |= I2C_CR1_START;
             communication_step = 3;
         }
+        // If step 3 and Start Bit is 1
+        // Set step to 4, send address, set NACK signalto be sent
         else if (communication_step == 3 && (I2C1->SR1 & I2C_SR1_SB))
         {
-            I2C1->DR = (LIS35DE_ADDR << 1) | 1U;
+            I2C1->DR = (LIS35DE_ADDR << 1) | 1;
             I2C1->CR1 &= ~I2C_CR1_ACK;
             communication_step = 4;
         }
-        if (communication_step == 4 && (I2C1->SR1 & I2C_SR1_ADDR))
+        // If step 4 and Address sent
+        // Set step to 5, reset addr, enable stop bit
+        else if (communication_step == 4 && (I2C1->SR1 & I2C_SR1_ADDR))
         {
             I2C1->SR2;
             I2C1->CR1 |= I2C_CR1_STOP;
             communication_step = 5;
         }
-        if (communication_step == 5 && (I2C1->SR1 & I2C_SR1_RXNE))
+        // If step 5 and Data Register Not Empty
+        // Read value from register, go to IDLE state
+        else if (communication_step == 5 && (I2C1->SR1 & I2C_SR1_RXNE))
         {
             value_from_register = I2C1->DR;
             __NOP();
@@ -172,7 +186,9 @@ void I2C1_EV_IRQHandler()
     else
     {
         communication_step = 0;
+        // Stop communication
         I2C1->CR1 |= I2C_CR1_STOP;
+        // Disable interrupt
         I2C1->CR2 &= ~(I2C_CR2_ITBUFEN | I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);
     }
 }
