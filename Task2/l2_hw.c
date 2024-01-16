@@ -325,9 +325,7 @@ int main(void)
 
     ENABLE_PERIPHERAL;
 
-    for (;;)
-    {
-    }
+    for (;;) {}
 
     return 0;
 }

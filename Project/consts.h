@@ -8,8 +8,8 @@
 /* Address of accelerometer                   */
 #define     LIS35DE_ADDR           0x1C
 
-/* Numbers of registers corresponding to axes */
-#define     REGISTER_X             0x29
-#define     REGISTER_Y             0x2B
+/* Numbers of registers corresponding to axes X and Y */
+#define     OUT_X             0x29
+#define     OUT_Y             0x2B
 
 #endif /* CONSTS_H */
