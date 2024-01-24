@@ -23,7 +23,7 @@ uint8_t is_queue_full(messages_queue_t *);
 void enqueue(messages_queue_t *, char *);
 
 
-char *poll_queue(messages_queue_t *);
+char *queue_poll(messages_queue_t *);
 
 
 #endif /* MESSAGES_QUEUE_H */

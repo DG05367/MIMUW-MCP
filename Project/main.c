@@ -38,7 +38,7 @@ static accelerometer_read_state_t read_state;
 static uint32_t communication_step;
 
 // Integer value for reading acceleration from accelerometer register
-static uint8_t value_from_register;
+// static uint8_t value_from_register;
 
 // Buffer for sending messages with acceleration values in format
 // Xacc_xYacc_y, where acc_x, acc_y are zero-padded integers
@@ -76,22 +76,17 @@ static void send(char *message_text)
     {
         send_with_DMA(message_text);
     }
-    // If queue not full, push message to queue
-    // "If this condition is not met, the transfer must be queued"
-    // the condition being:
-    // DMA1_Stream6->CR & DMA_SxCR_EN == 0 && DMA1->HISR & DMA_HISR_TCIF6 == 0
     else if (!is_queue_full(&messages_queue))
     {
         enqueue(&messages_queue, message_text);
     }
 }
 
-static void write_to_buffer(uint8_t register_number)
+static void write_to_buffer(uint8_t register_number, uint8_t value)
 {
     int buffer_offset = (register_number == OUT_X) ? BUFFER_POSITION_X
                                                    : BUFFER_POSITION_Y;
 
-    uint8_t value = value_from_register;
 
     for (int i = REGISTER_VALUE_DECIMAL_LENGTH; i > 0; --i)
     {
@@ -120,19 +115,21 @@ void DMA1_Stream6_IRQHandler(void)
 }
 void I2C1_EV_IRQHandler()
 {
+    uint16_t statreg = I2C1->SR1;
+
     // Writting to accelerometer register
     if (read_state == WRITING)
     {
         // If step 0 and Start Bit is 1
         // Initiate sending, set step to 1
-        if (communication_step == 0 && (I2C1->SR1 & I2C_SR1_SB))
+        if (communication_step == 0 && (statreg & I2C_SR1_SB))
         {
             communication_step = 1;
             I2C1->DR = LIS35DE_ADDR << 1;
         }
         // If step 1 and Address sent
         // Set step to 2, reset addr, insert value to be written to the acc
-        else if (communication_step == 1 && (I2C1->SR1 & I2C_SR1_ADDR))
+        else if (communication_step == 1 && (statreg & I2C_SR1_ADDR))
         {
             communication_step = 2;
 
@@ -153,22 +150,22 @@ void I2C1_EV_IRQHandler()
     {
         // If step 2 and Byte Transfer Finished
         // Set step to 3, send start bit
-        if (communication_step == 2 && (I2C1->SR1 & I2C_SR1_BTF))
+        if (communication_step == 2 && (statreg & I2C_SR1_BTF))
         {
             I2C1->CR1 |= I2C_CR1_START;
             communication_step = 3;
         }
         // If step 3 and Start Bit is 1
         // Set step to 4, send address, set NACK signalto be sent
-        else if (communication_step == 3 && (I2C1->SR1 & I2C_SR1_SB))
+        else if (communication_step == 3 && (statreg & I2C_SR1_SB))
         {
-            I2C1->DR = (LIS35DE_ADDR << 1) | 1;
+            I2C1->DR = (LIS35DE_ADDR << 1) | 1U;
             I2C1->CR1 &= ~I2C_CR1_ACK;
             communication_step = 4;
         }
         // If step 4 and Address sent
         // Set step to 5, reset addr, enable stop bit
-        else if (communication_step == 4 && (I2C1->SR1 & I2C_SR1_ADDR))
+        else if (communication_step == 4 && (statreg & I2C_SR1_ADDR))
         {
             I2C1->SR2;
             I2C1->CR1 |= I2C_CR1_STOP;
@@ -176,9 +173,12 @@ void I2C1_EV_IRQHandler()
         }
         // If step 5 and Data Register Not Empty
         // Read value from register, go to IDLE state
-        else if (communication_step == 5 && (I2C1->SR1 & I2C_SR1_RXNE))
+        else if (communication_step == 5 && (statreg & I2C_SR1_RXNE))
         {
-            value_from_register = I2C1->DR;
+            // Integer value for reading acceleration from accelerometer register
+            uint8_t value_from_register = I2C1->DR;
+            write_to_buffer(target_register, value_from_register);
+            
             __NOP();
             read_state = IDLE;
         }
@@ -203,7 +203,6 @@ void TIM3_IRQHandler(void)
     if (interrupt_status & TIM_SR_UIF)
     {
         initiate_read_from_accelerometer_register(OUT_X);
-        write_to_buffer(OUT_X);
 
         // Clear UIF flag
         TIM3->SR = ~TIM_SR_UIF;
@@ -214,7 +213,6 @@ void TIM3_IRQHandler(void)
     if (interrupt_status & TIM_SR_CC1IF)
     {
         initiate_read_from_accelerometer_register(OUT_Y);
-        write_to_buffer(OUT_Y);
 
         // Clear CC1IF flag
         TIM3->SR = ~TIM_SR_CC1IF;
@@ -238,11 +236,11 @@ int main(void)
     RCC_configure();
     USART_configure();
     DMA_configure();
-    NVIC_configure();
     I2C_configure();
+    NVIC_configure();
     TIM_configure();
 
-    ENABLE_USART2;
+    USART_enable();
 
     for (;;)
     {

@@ -10,7 +10,7 @@
 #define PCLK1_HZ HSI_HZ
 
 // I2C Constants
-#define I2C_SPEED_HZ 100000U
+#define I2C_SPEED_HZ 100000
 #define PCLK1_MHZ 16
 #define CTRL_REG1_VALUE 0b01000111
 #define CTRL_REG3_VALUE 0b00000100
@@ -21,25 +21,6 @@
 // TIM Constants
 #define PSC_VALUE 400
 #define ARR_VALUE 1000
-
-// Configure RCC:
-// Code from Slide 9 (w8)
-void RCC_configure()
-{
-    // Enable GPIOA, GPIOB, GPIOC, DMA1 clock
-    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN |
-                    RCC_AHB1ENR_GPIOBEN |
-                    RCC_AHB1ENR_GPIOCEN |
-                    RCC_AHB1ENR_DMA1EN;
-
-    // Enable USART2, I2C, TIM3 clock
-    RCC->APB1ENR |= RCC_APB1ENR_USART2EN |
-                    RCC_APB1ENR_I2C1EN |
-                    RCC_APB1ENR_TIM3EN;
-
-    // Enable SYSCFG clock
-    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
-}
 
 // Configure USART2:
 // Code from Slides 10 to 11 (w8)
@@ -69,7 +50,7 @@ void USART_configure(void)
 
 // Configure DMA1:
 // Code from Slides 12 to 14 (w8)
-static void DMA_configure(void)
+void DMA_configure(void)
 {
     /* USART2 TX (sending stream):
         uses stream 6 and channel 4, direct transfer mode, 8-bits transfers,
@@ -190,10 +171,10 @@ void I2C_configure()
     // Main configuration register
     I2C_configure_partial(I2C_CTRL_REG1, CTRL_REG1_VALUE);
 
-    Delay(WAIT_MAX/10);
+    //Delay(100000);
 
     // Interrupt configuration register
-    I2C_configure_partial(I2C_CTRL_REG3, CTRL_REG3_VALUE);
+    // I2C_configure_partial(I2C_CTRL_REG3, CTRL_REG3_VALUE);
 }
 
 void TIM_configure()
@@ -202,11 +183,11 @@ void TIM_configure()
     TIM3->CR1 = 0;
 
     // Set Prescaler
-    TIM3->PSC = 400;
+    TIM3->PSC = PSC_VALUE;
 
     // Set Auto-reload register
     // Counts from 0 to 1000
-    TIM3->ARR = 1000;
+    TIM3->ARR = ARR_VALUE;
 
     // Update generation
     TIM3->EGR = TIM_EGR_UG;
@@ -224,3 +205,25 @@ void TIM_configure()
     TIM3->CR1 |= TIM_CR1_CEN;
 }
 
+// Configure RCC:
+// Code from Slide 9 (w8)
+void RCC_configure()
+{
+    // Enable GPIOA, GPIOB, GPIOC, DMA1 clock
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN |
+                    RCC_AHB1ENR_GPIOBEN |
+                    RCC_AHB1ENR_GPIOCEN |
+                    RCC_AHB1ENR_DMA1EN;
+
+    // Enable USART2, I2C, TIM3 clock
+    RCC->APB1ENR |= RCC_APB1ENR_USART2EN |
+                    RCC_APB1ENR_I2C1EN |
+                    RCC_APB1ENR_TIM3EN;
+
+    // Enable SYSCFG clock
+    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+}
+
+void USART_enable(){
+    USART2->CR1 |= USART_CR1_UE;
+}
